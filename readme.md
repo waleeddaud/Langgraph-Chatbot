@@ -19,7 +19,6 @@ A conversational AI chatbot built using [LangGraph](https://github.com/langchain
 - **Frontend**: Streamlit
 - **Backend**: Python, LangGraph
 - **AI**: Any supported LLM (OpenAI, Gemini, etc.)
-- **Others**: LangChain, Tavily (optional for search)
 
 ---
 
