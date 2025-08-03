@@ -29,13 +29,13 @@ graph.add_edge(START, "chatnode")
 graph.add_edge("chatnode", END)
 chatbot = graph.compile(checkpointer = checkpointer)
 
+# # For streaming code example
+# thread_id = os.getenv("thread_id")
+# config = {"configurable" : {"thread_id" : thread_id}}
+# for message_chunk , metadata in chatbot.stream(
+#     {"messages" : [HumanMessage(content="Hello how to make pizza recipe")]},
+#       config = config,
+#      stream_mode="messages"):
+#     if message_chunk.content:
+#         print(message_chunk.content, end=" ", flush=True)
 
-# thread_id = uuid4().hex
-# chatbot.invoke({"messages" : [HumanMessage(content="Hello, my name is Waleed?") ]}, config = config)
-
-# while True:
-#     user_input = input("You: ")
-#     if user_input.strip().lower() in { "exit" , "quit", "end" }:
-#         break
-#     response = chatbot.invoke({"messages" : [HumanMessage(content=user_input)]}, config = config)
-#     print(f"Chatbot: {response['messages'][-1].content}")
