@@ -35,7 +35,11 @@ source venv/bin/activate   # or venv\Scripts\activate on Windows
 # Install dependencies
 pip install -r requirements.txt
 
-# For running streamlit, use command
+# For running streamlit chatbot with no streaming, use command
 streamlit run frontend.py
+
+# For running chatbot with implemented streaming in it 
+streamlit run frontend_streaming.py
+
 
 
