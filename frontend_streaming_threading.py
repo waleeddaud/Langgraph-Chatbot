@@ -1,95 +1,147 @@
 import streamlit as st
-import os , time
+import os
 from uuid import uuid4
 from langgraph_chatbot import chatbot, HumanMessage
 from dotenv import load_dotenv
+
 load_dotenv()
 
-def load_thread(thread_id: str):
-    st.session_state.update({"active_thread_id":thread_id })
-    
+st.set_page_config(page_title="Chatbot UI", page_icon="💬", layout="wide")
 
-def load_messages(thread_id : str):
-    my_lst= []
-    for msg in chatbot.get_state(config={"configurable" : {"thread_id" : thread_id}}).values.get("messages", []):
-        role= "assistant"
-        if isinstance(msg, HumanMessage):
-            role ="user"
-        my_lst.append({"role": role, "content": msg.content})
-    return my_lst
-
+# --- Utility functions ---
 def generate_thread_id() -> str:
-    """Generate a unique thread ID."""
     return str(uuid4())
+
+def load_thread(thread_id: str):
+    st.session_state.active_thread_id = thread_id
+
+def load_messages(thread_id: str):
+    messages = []
+    for msg in chatbot.get_state(config={"configurable": {"thread_id": thread_id}}).values.get("messages", []):
+        role = "assistant"
+        if isinstance(msg, HumanMessage):
+            role = "user"
+        messages.append({
+            "role": role,
+            "content": msg.content
+        })
+    return messages
+
 def handle_new_chat():
-    """Handle the creation of a new chat thread."""
-    st.session_state.active_thread_id = generate_thread_id()
-    st.session_state.messages[st.session_state.active_thread_id] = []
-    st.session_state.thread_ids.append(st.session_state.active_thread_id)
-    st.session_state.titles[st.session_state.active_thread_id] = "Untitled Chat"
+    thread_id = generate_thread_id()
+    st.session_state.active_thread_id = thread_id
+    st.session_state.messages[thread_id] = []
+    st.session_state.titles[thread_id] = f"Chat {len(st.session_state.thread_ids) + 1}"
+    st.session_state.thread_ids.append(thread_id)
 
-
-
-st.set_page_config(page_title="Streaming output Chatbot", page_icon="💬")
-
-st.title("Chatbot UI")
+# --- Session state setup ---
 if "titles" not in st.session_state:
     st.session_state.titles = {}
 if "messages" not in st.session_state:
-    # Now what is want is Dict [str, list[]]
     st.session_state.messages = {}
-# in our session state there will be active thread_id and list of thread_ids , if there is no by default create one
+if "thread_ids" not in st.session_state:
+    new_id = generate_thread_id()
+    st.session_state.active_thread_id = new_id
+    st.session_state.thread_ids = [new_id]
+    st.session_state.titles[new_id] = "Chat 1"
+    st.session_state.messages[new_id] = []
 if "active_thread_id" not in st.session_state:
-    st.session_state.active_thread_id = generate_thread_id()
-    active_thread = st.session_state.active_thread_id
-    st.session_state.titles[active_thread] = "Untitled Chat"
-    st.session_state.thread_ids = [active_thread]
-    st.session_state.messages[active_thread] = []
-
+    st.session_state.active_thread_id = st.session_state.thread_ids[0]
 
 active_thread_id = st.session_state.active_thread_id
 
+# --- Sidebar ---
 with st.sidebar:
-    st.title("All Conversations")
-    st.button("New Chat", on_click=handle_new_chat)
-
-    st.header("My Coversations")
+    st.markdown("## 💬 Chatbot")
+    st.button("➕ New Chat", use_container_width=True, on_click=handle_new_chat)
+    st.markdown("### 🕘 Conversation History")
     for thread_id in st.session_state.get("thread_ids", [])[::-1]:
-        st.button(st.session_state.titles[thread_id],key=f"button_{thread_id}",  on_click=lambda t=thread_id:load_thread(t))
+        label = st.session_state.titles[thread_id]
+        if thread_id == active_thread_id:
+            st.markdown(f"✅ **{label}**")
+        else:
+            st.button(label, key=thread_id, on_click=lambda t=thread_id: load_thread(t))
+
+    st.markdown("---")
+    st.markdown("### ❓ Quick Topics")
+    st.markdown("- Account Issues\n- Payment Info\n- Product Help\n- Language Settings")
+
+    st.markdown("### ⚙️ Settings")
+    st.selectbox("Language", ["English", "Urdu", "Arabic"], index=0)
+    st.checkbox("🔔 Notifications", value=True)
+
+# --- Chat Window Style ---
+st.markdown("""
+<style>
+.chat-container {
+    max-width: 900px;
+    margin: auto;
+}
+.chat-bubble {
+    padding: 0.8rem 1rem;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+    max-width: 75%;
+    word-wrap: break-word;
+}
+.user-bubble {
+    background-color: #DCF8C6;
+    align-self: flex-end;
+    text-align: right;
+    margin-left: auto;
+}
+.bot-bubble {
+    background-color: #F1F0F0;
+    align-self: flex-start;
+    text-align: left;
+    margin-right: auto;
+}
+.avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 10px;
+}
+.chat-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
 
-# # Display chat history
-for message in load_messages(active_thread_id):
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-# for message in st.session_state.messages[active_thread_id]:
-#     with st.chat_message(message["role"]):
-#         st.markdown(message["content"])
+for msg in load_messages(active_thread_id):
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
 
-# User input
-user_input = st.chat_input("Say something...")
+# --- Chat Input Section ---
+user_input = st.chat_input("💬 Type your message here...")
 
 if user_input:
-    # Add user message to chat history
     st.session_state.messages[active_thread_id].append({"role": "user", "content": user_input})
-    # Display user message
     with st.chat_message("user"):
         st.markdown(user_input)
-    
-    CONFIG = {"configurable" : {"thread_id" : st.session_state.active_thread_id}}
-   
-    
 
-    # Add bot message to chat history
+    CONFIG = {"configurable": {"thread_id": active_thread_id}}
+
     with st.chat_message("assistant"):
-        bot_response = st.write_stream(
-            message_chunk.content for message_chunk, metadata in chatbot.stream(
-                {"messages": [HumanMessage(content=user_input)]},
-                config=CONFIG,
-                stream_mode="messages"  
-            )
-        )
-    st.session_state.messages[active_thread_id].append({"role": "assistant", "content": bot_response})
-    
-    
+        response_container = st.empty()
+        full_response = ""
+        for chunk, metadata in chatbot.stream(
+            {"messages": [HumanMessage(content=user_input)]},
+            config=CONFIG,
+            stream_mode="messages"
+        ):
+            content = chunk.content
+            full_response += content
+            response_container.markdown(full_response + "▌")
+
+        response_container.markdown(full_response)
+
+    st.session_state.messages[active_thread_id].append({
+        "role": "assistant",
+        "content": full_response
+    })
