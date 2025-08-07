@@ -3,7 +3,7 @@ from uuid import uuid4
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import START , END, StateGraph
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import add_messages
 from typing import TypedDict, Annotated, Literal
@@ -29,13 +29,17 @@ graph.add_edge(START, "chatnode")
 graph.add_edge("chatnode", END)
 chatbot = graph.compile(checkpointer = checkpointer)
 
+
 # # For streaming code example
 # thread_id = os.getenv("thread_id")
 # config = {"configurable" : {"thread_id" : thread_id}}
 # for message_chunk , metadata in chatbot.stream(
-#     {"messages" : [HumanMessage(content="Hello how to make pizza recipe")]},
+#     {"messages" : [HumanMessage(content="Hello my name is Waleed")]},
 #       config = config,
 #      stream_mode="messages"):
 #     if message_chunk.content:
 #         print(message_chunk.content, end=" ", flush=True)
+
+
+
 
